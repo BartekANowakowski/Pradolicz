@@ -1,0 +1,5 @@
+{
+  "name": "Prądolicz Pro",
+  "description": "Zaawansowane narzędzie do analizy kosztów energii elektrycznej na podstawie danych historycznych CSV, umożliwiające porównanie taryf G11, G12, G12w oraz G13 z pełną konfiguracją stref czasowych.",
+  "requestFramePermissions": []
+}
