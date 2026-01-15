@@ -2,7 +2,7 @@
 
 Zaawansowane narzędzie webowe do precyzyjnej analizy kosztów energii elektrycznej w gospodarstwach domowych i firmach. Aplikacja pozwala na porównanie opłacalności najpopularniejszych taryf (G11, G12, G12w, G13) na podstawie rzeczywistych danych z licznika.
 
-![Prądolicz Pro](.atatchments\screen.png)
+![Prądolicz Pro](.atatchments/screen.png)
 
 ## Główne Funkcjonalności
 
