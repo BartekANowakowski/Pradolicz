@@ -62,6 +62,9 @@ export const calculateTariffCosts = (
       monthlyMap[monthKey] = {
         month: monthKey, year: date.getFullYear(),
         g11_cost: 0, g12_cost: 0, g12w_cost: 0, g13_cost: 0, total_kwh: 0,
+        g12_kwh_peak: 0, g12_kwh_offpeak: 0,
+        g12w_kwh_peak: 0, g12w_kwh_offpeak: 0,
+        g13_kwh_peak: 0, g13_kwh_mid: 0, g13_kwh_offpeak: 0,
       };
     }
 
@@ -71,47 +74,55 @@ export const calculateTariffCosts = (
     // G11 - Single rate 24/7
     res.g11_cost += record.kwh * getRate(pricing.g11.rate);
 
-    // G12 - User configurable off-peak hours
+    // G12
     const isG12OffPeak = config.g12_offPeakHours.includes(hour);
-    res.g12_cost += record.kwh * (isG12OffPeak ? getRate(pricing.g12.offPeak) : getRate(pricing.g12.peak));
+    if (isG12OffPeak) {
+      res.g12_cost += record.kwh * getRate(pricing.g12.offPeak);
+      res.g12_kwh_offpeak += record.kwh;
+    } else {
+      res.g12_cost += record.kwh * getRate(pricing.g12.peak);
+      res.g12_kwh_peak += record.kwh;
+    }
 
-    // G12w - Free days + user configurable off-peak hours on workdays
+    // G12w
     const isG12wOffPeak = isFreeDay || config.g12w_offPeakHours.includes(hour);
-    res.g12w_cost += record.kwh * (isG12wOffPeak ? getRate(pricing.g12w.offPeak) : getRate(pricing.g12w.peak));
+    if (isG12wOffPeak) {
+      res.g12w_cost += record.kwh * getRate(pricing.g12w.offPeak);
+      res.g12w_kwh_offpeak += record.kwh;
+    } else {
+      res.g12w_cost += record.kwh * getRate(pricing.g12w.peak);
+      res.g12w_kwh_peak += record.kwh;
+    }
 
-    /**
-     * G13 logic based on user's screenshots:
-     * - Holidays/Weekends: always Strefa III (offPeak)
-     * - Summer (Apr 1st - Sept 30th):
-     *    - 13:00 - 19:00 AND 22:00 - 07:00 -> Strefa III (offPeak)
-     *    - 07:00 - 13:00 -> Strefa I (mid)
-     *    - 19:00 - 22:00 -> Strefa II (peak)
-     * - Winter (Oct 1st - Mar 31st):
-     *    - 13:00 - 16:00 AND 21:00 - 07:00 -> Strefa III (offPeak)
-     *    - 07:00 - 13:00 -> Strefa I (mid)
-     *    - 16:00 - 21:00 -> Strefa II (peak)
-     */
+    // G13 logic
     let g13PriceRate: number;
     if (isFreeDay) {
       g13PriceRate = getRate(pricing.g13.offPeak);
+      res.g13_kwh_offpeak += record.kwh;
     } else {
       const month = date.getMonth() + 1;
       const isSummer = month >= 4 && month <= 9;
       if (isSummer) {
         if ((hour >= 13 && hour < 19) || (hour >= 22 || hour < 7)) {
           g13PriceRate = getRate(pricing.g13.offPeak);
+          res.g13_kwh_offpeak += record.kwh;
         } else if (hour >= 7 && hour < 13) {
           g13PriceRate = getRate(pricing.g13.mid);
+          res.g13_kwh_mid += record.kwh;
         } else {
           g13PriceRate = getRate(pricing.g13.peak);
+          res.g13_kwh_peak += record.kwh;
         }
       } else {
         if ((hour >= 13 && hour < 16) || (hour >= 21 || hour < 7)) {
           g13PriceRate = getRate(pricing.g13.offPeak);
+          res.g13_kwh_offpeak += record.kwh;
         } else if (hour >= 7 && hour < 13) {
           g13PriceRate = getRate(pricing.g13.mid);
+          res.g13_kwh_mid += record.kwh;
         } else {
           g13PriceRate = getRate(pricing.g13.peak);
+          res.g13_kwh_peak += record.kwh;
         }
       }
     }

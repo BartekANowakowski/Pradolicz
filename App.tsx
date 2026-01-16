@@ -2,9 +2,9 @@
 import React, { useState, useMemo } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line,
-  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend
 } from 'recharts';
-import { Upload, Download, Calculator, BarChart3, Settings, TrendingDown, Info, Table, Calendar, Sun, Snowflake, Zap, Clock } from 'lucide-react';
+import { Upload, Download, Calculator, BarChart3, Settings, TrendingDown, Info, Table, Calendar, Sun, Snowflake, Zap, Clock, PieChart } from 'lucide-react';
 import { EnergyRecord, TariffPricing, ScheduleConfig, PriceComponent } from './types';
 import { DEFAULT_PRICING, DEFAULT_G12_OFFPEAK, DEFAULT_G12W_OFFPEAK, DEFAULT_G13_PEAK, DEFAULT_G13_MID } from './constants';
 import { parseCSV, calculateTariffCosts } from './services/tariffEngine';
@@ -110,6 +110,42 @@ const App: React.FC = () => {
     filteredRecords.forEach(r => months.add(MONTH_NAMES[r.timestamp.getMonth()]));
     return Array.from(months).sort((a, b) => MONTH_NAMES.indexOf(a) - MONTH_NAMES.indexOf(b));
   }, [filteredRecords]);
+
+  const distributionChartData = useMemo(() => {
+    const totalKwh = totals.kwh || 1;
+    const sums = analysisResults.reduce((acc, curr) => ({
+        g12p: acc.g12p + curr.g12_kwh_peak,
+        g12o: acc.g12o + curr.g12_kwh_offpeak,
+        g12wp: acc.g12wp + curr.g12w_kwh_peak,
+        g12wo: acc.g12wo + curr.g12w_kwh_offpeak,
+        g13p: acc.g13p + curr.g13_kwh_peak,
+        g13m: acc.g13m + curr.g13_kwh_mid,
+        g13o: acc.g13o + curr.g13_kwh_offpeak,
+    }), { g12p: 0, g12o: 0, g12wp: 0, g12wo: 0, g13p: 0, g13m: 0, g13o: 0 });
+
+    return [
+        {
+            name: 'G11',
+            'Całodobowa': 100,
+        },
+        {
+            name: 'G12',
+            'Szczyt': (sums.g12p / totalKwh) * 100,
+            'Dolina': (sums.g12o / totalKwh) * 100,
+        },
+        {
+            name: 'G12w',
+            'Szczyt': (sums.g12wp / totalKwh) * 100,
+            'Dolina / Weekend': (sums.g12wo / totalKwh) * 100,
+        },
+        {
+            name: 'G13',
+            'Szczyt popołudniowy (II)': (sums.g13p / totalKwh) * 100,
+            'Szczyt przedpołudniowy (I)': (sums.g13m / totalKwh) * 100,
+            'Pozostałe (III)': (sums.g13o / totalKwh) * 100,
+        }
+    ];
+  }, [analysisResults, totals.kwh]);
 
   const PricingSection = ({ title, colorClass, children }: any) => (
     <div className={`${colorClass} p-4 rounded-xl border`}>
@@ -300,6 +336,32 @@ const App: React.FC = () => {
                       </RadarChart>
                     </ResponsiveContainer>
                   </div>
+                </div>
+              </section>
+
+              <section className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+                <h3 className="text-lg font-black text-slate-800 mb-8 flex items-center gap-2"><PieChart size={20} className="text-emerald-500" /> Podział zużycia w strefach (%)</h3>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart layout="vertical" data={distributionChartData} margin={{ left: 10, right: 30, top: 20, bottom: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                      <XAxis type="number" domain={[0, 100]} hide />
+                      <YAxis dataKey="name" type="category" tick={{ fontSize: 12, fontWeight: 800, fill: '#1e293b' }} axisLine={false} tickLine={false} width={60} />
+                      <Tooltip 
+                        formatter={(value: number) => value.toFixed(1) + '%'} 
+                        cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                      />
+                      <Legend verticalAlign="top" align="center" iconType="circle" wrapperStyle={{ paddingBottom: '20px', fontSize: '11px', fontWeight: 700 }} />
+                      <Bar dataKey="Całodobowa" stackId="a" fill="#2563eb" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="Szczyt" stackId="a" fill="#ef4444" />
+                      <Bar dataKey="Dolina" stackId="a" fill="#10b981" />
+                      <Bar dataKey="Dolina / Weekend" stackId="a" fill="#059669" />
+                      <Bar dataKey="Szczyt popołudniowy (II)" stackId="a" fill="#b91c1c" />
+                      <Bar dataKey="Szczyt przedpołudniowy (I)" stackId="a" fill="#f59e0b" />
+                      <Bar dataKey="Pozostałe (III)" stackId="a" fill="#047857" />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </section>
             </>

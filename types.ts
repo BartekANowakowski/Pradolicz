@@ -31,4 +31,12 @@ export interface CalculationResult {
   g12w_cost: number;
   g13_cost: number;
   total_kwh: number;
+  // Statystyki zużycia w strefach
+  g12_kwh_peak: number;
+  g12_kwh_offpeak: number;
+  g12w_kwh_peak: number;
+  g12w_kwh_offpeak: number;
+  g13_kwh_peak: number;
+  g13_kwh_mid: number;
+  g13_kwh_offpeak: number;
 }
